@@ -1,21 +1,16 @@
+from datetime import datetime
+
 import telebot
-import database.db
+
 from database.db import get_timetable, get_days, get_dz, get_materials, get_contacts
-from telebot import types
-
-from aiogram.utils.callback_data import CallbackData
-
-from aiogram.dispatcher.filters import Text
-
-from datetime import datetime, date, time
-
 
 bot = telebot.TeleBot('5295767643:AAHPejjNlmH-TpSbeHq7jRMIn3qxYgP9Lpc')
 
-def main_menu(m):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,row_width=2)
 
-    markup_items = ["Расписание","Материалы","Контакты","ДЗ"]
+def main_menu(m):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+
+    markup_items = ["Расписание", "Материалы", "Контакты", "ДЗ"]
 
     markup.add(*markup_items)
     markup.add("/start")
@@ -27,10 +22,12 @@ def main_menu(m):
                      '\nДЗ — для дз по предметам ',
                      reply_markup=markup)
 
+
 @bot.message_handler(commands=["start"])
-def start(m, res=False):
+def start(m):
         bot.send_message(m.chat.id, text="Вас приветсует бот помщник!")
         main_menu(m)
+
 
 @bot.message_handler(commands=["contacts"])
 def show_contacts(message):
@@ -41,7 +38,7 @@ def show_contacts(message):
 
     for row in query_res:
         name = row[0]
-        if (row[1] == 2):
+        if row[1] == 2:
             name = row[2]
         ref = row[3]
         keyboard.append(
@@ -55,6 +52,7 @@ def show_contacts(message):
 
     markup = telebot.types.InlineKeyboardMarkup(keyboard=keyboard_elements)
     return markup
+
 
 @bot.message_handler(commands=["materials"])
 def show_referense(message):
@@ -74,6 +72,7 @@ def show_referense(message):
     markup = telebot.types.InlineKeyboardMarkup(keyboard=keyboard_elements)
     return markup
 
+
 @bot.message_handler(commands=["dz"])
 def show_dz(message):
     keyboard = telebot.types.InlineKeyboardMarkup()
@@ -86,33 +85,60 @@ def show_dz(message):
 
     return keyboard
 
+
 @bot.message_handler(commands=["table"])
 def show_table(message):
     keyboard = telebot.types.InlineKeyboardMarkup()
     days = get_days()
 
     for day in days:
-        keyboard.add(telebot.types.InlineKeyboardButton(day[1], callback_data=f"tbl_{day[0]}"),row_width=5)
+        keyboard.add(
+            telebot.types.InlineKeyboardButton(
+                day[1],
+                callback_data=f"tbl_{day[0]}"
+            ),
+            row_width=5
+        )
 
     return keyboard
 
+
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
-    if message.text.strip() == "Расписание" :
-        bot.send_message(message.chat.id, text="Узнать расписание на",reply_markup=show_table(message))
+    if message.text.strip() == "Расписание":
+        bot.send_message(
+            message.chat.id,
+            text="Узнать расписание на",
+            reply_markup=show_table(message)
+        )
         return
     elif message.text.strip() == "Контакты":
-        bot.send_message(message.chat.id, text="Список контактов:", reply_markup=show_contacts(message))
+        bot.send_message(
+            message.chat.id,
+            text="Список контактов:",
+            reply_markup=show_contacts(message)
+        )
         return
     elif message.text.strip() == "ДЗ":
-        bot.send_message(message.chat.id, text="Узнать ДЗ на",reply_markup=show_dz(message))
+        bot.send_message(
+            message.chat.id,
+            text="Узнать ДЗ на",
+            reply_markup=show_dz(message)
+        )
         return
     elif message.text.strip() == "Материалы":
-        bot.send_message(message.chat.id, text="Материалы по предметам:", reply_markup=show_referense(message))
+        bot.send_message(
+            message.chat.id,
+            text="Материалы по предметам:",
+            reply_markup=show_referense(message)
+        )
         return
     else:
 
-        restart = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,row_width=1)
+        restart = telebot.types.ReplyKeyboardMarkup(
+            resize_keyboard=True,
+            row_width=1
+        )
         restart.add("/start")
         bot.send_message(
             message.chat.id,
@@ -121,6 +147,7 @@ def handle_text(message):
         )
         return
 
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     data = call.data
@@ -128,6 +155,7 @@ def callback_handler(call):
         call_table(call)
     elif data.startswith('dz_'):
         call_dz(call)
+
 
 def call_table(call):
 
@@ -144,13 +172,12 @@ def call_table(call):
 
     msg = f"Расписание на {str_day}:\n" + msg
 
-
     bot.answer_callback_query(call.id)
     bot.send_message(call.message.chat.id, msg)
     # bot.send_chat_action(call.message.id,'typing')
 
-def call_dz(call):
 
+def call_dz(call):
     weekday = datetime.weekday(datetime.now())
 
     if call.data == "dz_pst":
@@ -166,7 +193,7 @@ def call_dz(call):
 
     dz_desc = "\n - Домашнее задание отсутствует\n"
 
-    if (len(query_result) > 0):
+    if len(query_result) > 0:
         dz_desc = ""
         for row in query_result:
             dz_desc += f"\n - {row[0]}:\n {row[1]}\n"
