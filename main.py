@@ -1,6 +1,6 @@
 import telebot
 import database.db
-from database.db import get_timetable, get_days
+from database.db import get_timetable, get_days, get_dz
 from telebot import types
 
 from aiogram.utils.callback_data import CallbackData
@@ -76,35 +76,7 @@ def get_referenses():
     }
     return references
 
-def get_dz():
-    dz = {
-        "ПН":[
-            "Теория вероятностей и мат. статистика	семинар",
-            "Физическая химия	семинар",
-            "Английский язык	семинар"
-        ],
-        "ВТ": [
-            "Веб-программирование	лаба",
-            "Численные методы в среде MATLAB	лаба"
-        ],
-        "СР": [
 
-        ],
-        "ЧТ": [
-            "Технологии программирования	лаба дедлайн 25.02"
-        ],
-        "ПТ": [
-            "ЭлФКиС   тест",
-            "Архитектура информационных систем	лаба3 дедлайн 25.02"
-        ],
-        "СБ": [
-
-        ],
-        "ВС": [
-
-        ]
-    }
-    return dz
 
 @bot.message_handler(commands=["contacts"])
 def show_contacts(message):
@@ -150,21 +122,15 @@ def show_referense(message):
 
 @bot.message_handler(commands=["dz"])
 def show_dz(message):
-    dz = get_dz()
+    keyboard = telebot.types.InlineKeyboardMarkup()
 
-    dayofweek = ["ПН","ВТ","СР","ЧТ","ПТ","СБ","ВС"]
+    keyboard.row(
+        telebot.types.InlineKeyboardButton("Вчера", callback_data="dz_pst"),
+        telebot.types.InlineKeyboardButton("Сегодня", callback_data="dz_prs"),
+        telebot.types.InlineKeyboardButton("Завтра", callback_data="dz_fut")
+    )
 
-    weekday = dayofweek[datetime.weekday(datetime.now())]
-
-    msq = "Домашнее задание на сегодня:\n"
-
-    if (len(dz[weekday]) == 0):
-        msq += "Отсутствует"
-    else:
-        for string in dz[weekday]:
-            msq += " - " + string + "\n"
-
-    bot.send_message(message.chat.id, text=msq)
+    return keyboard
 
 @bot.message_handler(commands=["table"])
 def show_table(message):
@@ -185,7 +151,7 @@ def handle_text(message):
         bot.send_message(message.chat.id, text="Список контактов:", reply_markup=show_contacts(message))
         return
     elif message.text.strip() == "ДЗ":
-        show_dz(message)
+        bot.send_message(message.chat.id, text="Узнать ДЗ на",reply_markup=show_dz(message))
         return
     elif message.text.strip() == "Ссылки":
         bot.send_message(message.chat.id, text="Полезные ссылки:", reply_markup=show_referense(message))
@@ -201,9 +167,15 @@ def handle_text(message):
         )
         return
 
-
-@bot.callback_query_handler(Text(startswith="tbl_"))
+@bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
+    data = call.data
+    if data.startswith('tbl_'):
+        call_table(call)
+    elif data.startswith('dz_'):
+        call_dz(call)
+
+def call_table(call):
 
     msg = ""
     day = call.data[4:]
@@ -223,7 +195,32 @@ def callback_handler(call):
     bot.send_message(call.message.chat.id, msg)
     # bot.send_chat_action(call.message.id,'typing')
 
+def call_dz(call):
 
+    weekday = datetime.weekday(datetime.now())
+
+    if call.data == "dz_pst":
+        msg = "Домашнее задание на вчера:\n"
+        weekday = (7 + weekday - 1) % 7
+    elif call.data == "dz_fut":
+        msg = "Домашнее задание на завтра:\n"
+        weekday = (weekday + 1) % 7
+    else:
+        msg = "Домашнее задание на сегодня:\n"
+
+    query_result = get_dz(weekday + 1)
+
+    dz_desc = "\n - Домашнее задание отсутствует\n"
+
+    if (len(query_result) > 0):
+        dz_desc = ""
+        for row in query_result:
+            dz_desc += f"\n - {row[0]}:\n {row[1]}\n"
+
+    msg = msg + dz_desc
+
+    bot.answer_callback_query(call.id)
+    bot.send_message(call.message.chat.id, msg)
 
 
 bot.polling(none_stop=True, interval=0)

@@ -29,6 +29,16 @@ create table timetable(
                      primary key (Day_Id, Subject_Num)
                  );
 
+create table dz(
+    Day_Id int not null,
+    Subject_Id int not null,
+    Description varchar(255) not null,
+
+    foreign key (Day_Id) references days(Id),
+    foreign key (Subject_Id) references subjects(Id),
+    primary key (Day_Id, Subject_Id)
+);
+
 insert days(Name) values
                                           ('ПН'),
                                           ('ВТ'),
@@ -82,3 +92,16 @@ insert timetable(subject_id, day_id, subject_num, type_id) VALUES
 (32,5,3,3),
 (32,5,4,1);
 
+insert dz(day_id, subject_id, description)
+values
+(1,25,'Сделать что-то по тер-вер'),
+(1,26,'Кинуть мяч в кислоту'),
+(1,27,'Выучить текст'),
+(2,28,'Сделать #1 #2 лабу'),
+(2,29,'Защитить лабу'),
+
+(4,31,'Очень большое описание для теста Очень большое описание для теста Очень большое описание для теста
+Очень большое описание для теста Очень большое описание для
+теста Очень большое описание
+Очень большое описание для теста'),
+(5,32,'Сдать лабу #10');

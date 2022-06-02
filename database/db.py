@@ -50,3 +50,27 @@ def get_timetable(day_Id):
                 return mas
     except Error as e:
         print(e)
+
+def get_dz(day_Id):
+    select_query = f"""
+            select s.Name, dz.Description from dz
+            join days d on d.Id = dz.Day_Id
+            join subjects s on s.Id = dz.Subject_Id
+            where Day_Id = {day_Id} order by Subject_Id
+        """
+    try:
+        with connect(
+                host="localhost",
+                user="root",
+                password="root",
+                database="university_info"
+        ) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(select_query)
+                result = cursor.fetchall()
+                mas = []
+                for row in result:
+                    mas.append(row)
+                return mas
+    except Error as e:
+        print(e)
