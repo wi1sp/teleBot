@@ -158,7 +158,6 @@ def callback_handler(call):
 
 
 def call_table(call):
-
     msg = ""
     day = call.data[4:]
 
