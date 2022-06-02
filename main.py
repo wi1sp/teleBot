@@ -1,5 +1,6 @@
 import telebot
-
+import database.db
+from database.db import get_timetable, get_days
 from telebot import types
 
 from aiogram.utils.callback_data import CallbackData
@@ -74,37 +75,6 @@ def get_referenses():
         "vk.cc/cbcztP": "Сайт ВУЗа"
     }
     return references
-
-def get_table():
-    table = {
-        "ПН":[
-            "Discord	Теория вероятностей и мат. статистика	семинар",
-            "Teams	Физическая химия	семинар",
-            "Teams	Английский язык	семинар"
-        ],
-        "ВТ": [
-            "Discord	Веб-программирование	лаба",
-            "Discord	Веб-программирование	лаба",
-            "Discord	Численные методы в среде MATLAB	лаба"
-        ],
-        "СР": [
-            "Zoom	Теория вероятностей и мат. статистика <2>	лекция",
-            "Zoom	Физическая химия	лекция",
-            "VK	Физическая культура и спорт, + 13 и 27.04	лекция"
-        ],
-        "ЧТ": [
-            "Discord	Технологии программирования	лаба",
-            "Discord	Технологии программирования	лаба",
-            "Discord	Численные методы в среде MATLAB	лекция"
-        ],
-        "ПТ": [
-            "VK	ЭлФКиС",
-            "Discord	Технологии программирования	лекция",
-            "Discord	Архитектура информационных систем	лекция",
-            "Discord	Архитектура информационных систем	лаба"
-        ]
-    }
-    return table
 
 def get_dz():
     dz = {
@@ -198,15 +168,13 @@ def show_dz(message):
 
 @bot.message_handler(commands=["table"])
 def show_table(message):
-    keyboard = []
-    keyboard = keyboard + [telebot.types.InlineKeyboardButton("ПН", callback_data="ПН")]
-    keyboard = keyboard + [telebot.types.InlineKeyboardButton("ВТ", callback_data="ВТ")]
-    keyboard = keyboard + [telebot.types.InlineKeyboardButton("СР", callback_data="СР")]
-    keyboard = keyboard + [telebot.types.InlineKeyboardButton("ЧТ", callback_data="ЧТ")]
-    keyboard = keyboard + [telebot.types.InlineKeyboardButton("ПТ", callback_data="ПТ")]
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    days = get_days()
 
-    markup = telebot.types.InlineKeyboardMarkup(keyboard=[keyboard])
-    return markup
+    for day in days:
+        keyboard.add(telebot.types.InlineKeyboardButton(day[1], callback_data=f"tbl_{day[0]}"),row_width=5)
+
+    return keyboard
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
@@ -226,34 +194,37 @@ def handle_text(message):
 
         restart = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,row_width=1)
         restart.add("/start")
-        bot.send_message(message.chat.id, text="Ваша команда не распознона",
-                         reply_markup=restart
-                         )
+        bot.send_message(
+            message.chat.id,
+            text="Ваша команда не распознона",
+            reply_markup=restart
+        )
         return
 
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(Text(startswith="tbl_"))
 def callback_handler(call):
-    table = get_table()
-    msg = "Расписание на "
 
-    if call.data == "ПН":
-        msg += "понедельник"
-    elif call.data == "ВТ":
-        msg += "вторник"
-    elif call.data == "СР":
-        msg += "среду"
-    elif call.data == "ЧТ":
-        msg += "четверг"
-    elif call.data == "ПТ":
-        msg += "пятницу"
-    msg += ":\n"
+    msg = ""
+    day = call.data[4:]
 
-    for string in table[call.data]:
-        msg += " - "+string + "\n"
+    table = get_timetable(day)
 
-    bot.send_message(call.message.chat.id, msg);
-    #await call.answer()
+    str_day = ""
+
+    for row in table:
+        msg += f"{row[1]} - {row[2]} : {row[3]} \n"
+        str_day = row[0]
+
+    msg = f"Расписание на {str_day}:\n" + msg
+
+
+    bot.answer_callback_query(call.id)
+    bot.send_message(call.message.chat.id, msg)
+    # bot.send_chat_action(call.message.id,'typing')
+
+
+
 
 bot.polling(none_stop=True, interval=0)
 
