@@ -1,3 +1,6 @@
+create database university_info;
+use university_info;
+
 create table days(
                      Id INT auto_increment,
                      Name VARCHAR(3) not null,
@@ -32,11 +35,38 @@ create table timetable(
 create table dz(
     Day_Id int not null,
     Subject_Id int not null,
-    Description varchar(255) not null,
+    Description text not null,
 
     foreign key (Day_Id) references days(Id),
     foreign key (Subject_Id) references subjects(Id),
     primary key (Day_Id, Subject_Id)
+);
+
+create table materials(
+   Subject_Id int not null,
+   Ref text not null ,
+   foreign key (Subject_Id) references subjects(Id),
+   primary key (Subject_Id)
+);
+
+create table persons(
+    Id int auto_increment,
+    Fio varchar(255) not null,
+    PRIMARY KEY (Id)
+)
+
+create table posts(Id int auto_increment, Name varchar(50) not null, primary key (Id));
+insert posts(Name)
+values
+       ('Препоователь'),
+       ('Староста');
+
+create table contacts(
+    Person_Id int not null,
+    Post_Id int not null,
+    Ref text not null,
+    foreign key (Person_Id) references persons(Id),
+    foreign key (Post_Id) references posts(Id)
 );
 
 insert days(Name) values
@@ -105,3 +135,30 @@ values
 теста Очень большое описание
 Очень большое описание для теста'),
 (5,32,'Сдать лабу #10');
+
+
+insert materials(Subject_Id, Ref) VALUES
+(25,'drive.google.com/drive/'),
+(26,'drive.google.com/drive/'),
+(27,'drive.google.com/drive/'),
+(28,'drive.google.com/drive/'),
+(29,'drive.google.com/drive/'),
+(30,'drive.google.com/drive/'),
+(31,'drive.google.com/drive/'),
+(32,'drive.google.com/drive/');
+
+insert persons(Fio)
+values
+('Орлова Валерия Львовна'),
+('Кто-то'),
+('Главина Сафия Шамсутдиновна'),
+('Коломойцева Татьяна Васильевна'),
+('Папаев Павел Леонидович');
+
+insert contacts(Person_Id, Post_Id, Ref)
+values
+(1,1,'vk.cc/cbcwg8'),
+(2,2,'vk.com'),
+(3,1,'vk.cc/cbczAq'),
+(4,1,'vk.cc/cbczlG'),
+(5,1,'vk.cc/cbcxbj');

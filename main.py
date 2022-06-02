@@ -1,6 +1,6 @@
 import telebot
 import database.db
-from database.db import get_timetable, get_days, get_dz
+from database.db import get_timetable, get_days, get_dz, get_materials, get_contacts
 from telebot import types
 
 from aiogram.utils.callback_data import CallbackData
@@ -15,7 +15,7 @@ bot = telebot.TeleBot('5295767643:AAHPejjNlmH-TpSbeHq7jRMIn3qxYgP9Lpc')
 def main_menu(m):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,row_width=2)
 
-    markup_items = ["Расписание","Ссылки","Контакты","ДЗ"]
+    markup_items = ["Расписание","Материалы","Контакты","ДЗ"]
 
     markup.add(*markup_items)
     markup.add("/start")
@@ -32,88 +32,42 @@ def start(m, res=False):
         bot.send_message(m.chat.id, text="Вас приветсует бот помщник!")
         main_menu(m)
 
-def get_contacts():
-    contacts = {
-        "Орлова Валерия Львовна" : ("vk.cc/cbcwg8"),
-        "Главина Сафия Шамсутдиновна": ("vk.cc/cbczAq"),
-        "Волкова Ольга Фёдоровна": ("vk.cc/cbcztP"),
-        "Коломойцева Татьяна Васильевна": ("vk.cc/cbczlG"),
-        "Папаев Павел Леонидович": ("vk.cc/cbcxbj"),
-        "Филиппова Елена Борисовна": ("vk.cc/cbcxkN"),
-        "Хохрякова Юлия Владимировна": ("vk.cc/cb5v98"),
-        "Конюхов Валерий Юрьевич": ("vk.cc/cb5vbH"),
-        "Васецкий Алексей Михайлович": ("vk.cc/cbcy1I","vk.cc/cbcy1I"),
-        "Филиппова Елена Борисовна": ("vk.cc/cbcxkN"),
-        "Щербинин Максим Юрьевич": ("vk.cc/2VlOWH"),
-        "Иванов Святослав": ("vk.cc/cbcx3L"),
-        "Красильников Игорь Владимирович": ("vk.cc/cbcwCM")
-    }
-    return contacts;
-
-def get_fios():
-    list = [
-        "Орлова Валерия Львовна",
-        "Главина Сафия Шамсутдиновна",
-        "Волкова Ольга Фёдоровна",
-        "Коломойцева Татьяна Васильевна",
-        "Папаев Павел Леонидович",
-        "Филиппова Елена Борисовна",
-        "Хохрякова Юлия Владимировна",
-        "Конюхов Валерий Юрьевич",
-        "Васецкий Алексей Михайлович",
-        "Филиппова Елена Борисовна",
-        "Щербинин Максим Юрьевич",
-        "Иванов Святослав",
-        "Красильников Игорь Владимирович"
-        ]
-    return list
-
-def get_referenses():
-    references = {
-        "vk.cc/cbcwg8":"Discord: ОрловаВЛ",
-        "vk.cc/cbczAq": "Googdle Drive: папка с работами",
-        "vk.cc/cbcztP": "Сайт ВУЗа"
-    }
-    return references
-
-
-
 @bot.message_handler(commands=["contacts"])
 def show_contacts(message):
 
-    contacts = get_contacts()
-    fios = get_fios()
-    i = 0
-
     keyboard = []
 
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[0], url="https://" + contacts[fios[0]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[1], url="https://"+contacts[fios[1]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[2], url="https://"+contacts[fios[2]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[3], url="https://"+contacts[fios[3]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[4], url="https://"+contacts[fios[4]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[5], url="https://"+contacts[fios[5]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(fios[6], url="https://"+contacts[fios[6]]))
+    query_res = get_contacts()
 
+    for row in query_res:
+        name = row[0]
+        if (row[1] == 2):
+            name = row[2]
+        ref = row[3]
+        keyboard.append(
+            telebot.types.InlineKeyboardButton(
+                name,
+                url="https://" + ref
+            )
+        )
 
     keyboard_elements = [[element] for element in keyboard]
 
     markup = telebot.types.InlineKeyboardMarkup(keyboard=keyboard_elements)
     return markup
 
-@bot.message_handler(commands=["referense"])
+@bot.message_handler(commands=["materials"])
 def show_referense(message):
-
-    contacts = get_contacts()
-    fios = get_fios()
-    ref = get_referenses()
-    i = 0
 
     keyboard = []
 
-    keyboard.append(telebot.types.InlineKeyboardButton(ref[contacts[fios[0]]], url="https://" + contacts[fios[0]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(ref[contacts[fios[1]]], url="https://"+contacts[fios[1]]))
-    keyboard.append(telebot.types.InlineKeyboardButton(ref[contacts[fios[2]]], url="https://www.muctr.ru/"))
+    query_res = get_materials()
+
+    for row in query_res:
+        keyboard.append(
+            telebot.types.InlineKeyboardButton(
+                row[0],
+                url="https://" + row[1]))
 
     keyboard_elements = [[element] for element in keyboard]
 
@@ -153,8 +107,8 @@ def handle_text(message):
     elif message.text.strip() == "ДЗ":
         bot.send_message(message.chat.id, text="Узнать ДЗ на",reply_markup=show_dz(message))
         return
-    elif message.text.strip() == "Ссылки":
-        bot.send_message(message.chat.id, text="Полезные ссылки:", reply_markup=show_referense(message))
+    elif message.text.strip() == "Материалы":
+        bot.send_message(message.chat.id, text="Материалы по предметам:", reply_markup=show_referense(message))
         return
     else:
 
